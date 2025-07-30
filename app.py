@@ -25,7 +25,9 @@ logger = logging.getLogger(__name__)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
     logger.warning("⚠️ GEMINI_API_KEY not set. Please define it in your .env file.")
-
+else:
+    # ✅ ADD THIS LINE TO FIX THE ISSUE
+    genai.configure(api_key=GEMINI_API_KEY) 
 GEMINI_MODEL_NAME = "gemini-1.5-pro"
 
 class SpeakGenieAI:
