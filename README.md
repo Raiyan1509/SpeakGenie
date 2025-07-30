@@ -22,7 +22,7 @@
 |------------|----------------------------------|
 | Backend    | Python, Flask                    |
 | Frontend   | HTML, CSS, JS (Web Speech API)   |
-| AI Model   | OpenAI GPT-3.5 Turbo / Gemini API|
+| AI Model   | Gemini API                       |
 | Translation| Google Translate API (mocked)    |
 
 ---
@@ -33,7 +33,7 @@
 
 - Python 3.8+
 - `pip` installed
-- API key for **OpenAI** or **Google Gemini**
+- API key for **Google Gemini**
 - Optional: `.env` file to securely store API keys
 
 ---
@@ -42,7 +42,7 @@
 
 1. **Clone the project**
 ```bash
-git clone <your-repo-link>
+git clone <https://github.com/Raiyan1509/SpeakGenie>
 cd speakgenie-project
 
 pip install Flask openai python-dotenv google-generativeai
