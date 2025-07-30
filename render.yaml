@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: speakgenie
+    env: python
+    buildCommand: ""
+    startCommand: python app.py
+    envVars:
+      - key: GEMINI_API_KEY
+        value: AIzaSyAFfwH8VivdGQNfjZChtRbHlnOS8UWD--4
