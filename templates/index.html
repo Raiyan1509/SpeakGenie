@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpeakGenie - AI Voice Tutor</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Comic Sans MS', cursive, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: #333; overflow-x: hidden; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; color: white; }
+        .logo { font-size: 2.5rem; font-weight: bold; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .subtitle { font-size: 1.2rem; opacity: 0.9; }
+        .mode-selector { display: flex; justify-content: center; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
+        .mode-btn { background: linear-gradient(45deg, #ff6b6b, #ff8e53); border: none; border-radius: 20px; padding: 15px 30px; color: white; font-size: 1.1rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3); transition: all 0.3s ease; font-family: inherit; }
+        .mode-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4); }
+        .mode-btn.active { background: linear-gradient(45deg, #4ecdc4, #44a08d); box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3); }
+        .chat-container { background: white; border-radius: 25px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 20px; max-height: 600px; overflow-y: auto; }
+        .chat-messages { min-height: 300px; max-height: 300px; overflow-y: auto; margin-bottom: 20px; padding: 10px; border-radius: 15px; background: #f8f9ff; }
+        .message { margin-bottom: 15px; padding: 12px 18px; border-radius: 20px; max-width: 80%; animation: fadeInUp 0.3s ease; }
+        .user-message { background: linear-gradient(45deg, #667eea, #764ba2); color: white; margin-left: auto; text-align: right; }
+        .ai-message { background: linear-gradient(45deg, #4ecdc4, #44a08d); color: white; }
+        .controls { display: flex; justify-content: center; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
+        .control-btn { background: linear-gradient(45deg, #ff9a9e, #fecfef); border: none; border-radius: 50px; padding: 15px 25px; color: #333; font-weight: bold; cursor: pointer; font-size: 1rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(255, 154, 158, 0.3); font-family: inherit; }
+        .control-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 154, 158, 0.4); }
+        .control-btn:active { transform: scale(0.95); }
+        .record-btn { background: linear-gradient(45deg, #ff6b6b, #ee5a24); color: white; width: 80px; height: 80px; border-radius: 50%; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; }
+        .record-btn.recording { background: linear-gradient(45deg, #ff3838, #ff6b6b); animation: pulse 1s infinite; }
+        .roleplay-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .roleplay-card { background: white; border-radius: 20px; padding: 25px; text-align: center; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        .roleplay-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .roleplay-card.active { background: linear-gradient(45deg, #4ecdc4, #44a08d); color: white; }
+        .roleplay-icon { font-size: 3rem; margin-bottom: 15px; }
+        .roleplay-title { font-size: 1.3rem; font-weight: bold; margin-bottom: 10px; }
+        .roleplay-desc { font-size: 0.9rem; opacity: 0.8; }
+        .status-indicator { text-align: center; margin: 20px 0; font-size: 1.1rem; font-weight: bold; }
+        .listening { color: #ff6b6b; animation: pulse 1s infinite; }
+        .processing { color: #4ecdc4; }
+        .speaking { color: #667eea; animation: bounce 1s infinite; }
+        .language-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .lang-btn { background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.3); color: white; padding: 8px 16px; border-radius: 15px; cursor: pointer; transition: all 0.3s ease; font-family: inherit; }
+        .lang-btn:hover, .lang-btn.active { background: rgba(255,255,255,0.3); border-color: rgba(255,255,255,0.5); }
+        .feedback-area { background: linear-gradient(45deg, #ffeaa7, #fdcb6e); border-radius: 15px; padding: 20px; margin-top: 20px; text-align: center; }
+        .emoji-feedback { font-size: 2rem; margin-bottom: 10px; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes bounce { 0%, 20%, 60%, 100% { transform: translateY(0); } 40% { transform: translateY(-10px); } 80% { transform: translateY(-5px); } }
+        .hidden { display: none; }
+        .progress-bar { width: 100%; height: 8px; background: rgba(255,255,255,0.3); border-radius: 4px; margin: 10px 0; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(45deg, #4ecdc4, #44a08d); transition: width 0.3s ease; border-radius: 4px; }
+        .loading { opacity: 0.6; pointer-events: none; }
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            .logo { font-size: 2rem; }
+            .mode-selector { flex-direction: column; align-items: center; }
+            .controls { flex-direction: column; align-items: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🧞‍♂️ SpeakGenie</div>
+            <div class="subtitle">Your AI English Tutor Friend!</div>
+        </div>
+
+        <div class="language-selector">
+            <button class="lang-btn active" data-lang="en">🇺🇸 English</button>
+            <button class="lang-btn" data-lang="hi">🇮🇳 Hindi</button>
+            <button class="lang-btn" data-lang="mr">🇮🇳 Marathi</button>
+            <button class="lang-btn" data-lang="gu">🇮🇳 Gujarati</button>
+            <button class="lang-btn" data-lang="ta">🇮🇳 Tamil</button>
+        </div>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" id="chatMode">💬 Chat with Genie</button>
+            <button class="mode-btn" id="roleplayMode">🎭 Roleplay Adventures</button>
+        </div>
+
+        <div id="chatSection">
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message ai-message">
+                        <span>🧞‍♂️ Hi there! I'm Genie, your AI English tutor powered by real artificial intelligence! Ask me anything about English - grammar, vocabulary, or just have a chat! I can understand your voice and speak back to you! 😊</span>
+                    </div>
+                </div>
+                
+                <div class="status-indicator" id="statusIndicator">Ready to chat! Click the microphone and speak 🎤</div>
+                
+                <div class="controls">
+                    <button class="control-btn record-btn" id="recordBtn">🎤</button>
+                    <button class="control-btn" id="clearChat">🗑️ Clear</button>
+                    <button class="control-btn" id="speakLastResponse">🔊 Repeat</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="roleplaySection" class="hidden">
+            <div class="roleplay-selector">
+                <div class="roleplay-card" data-roleplay="school">
+                    <div class="roleplay-icon">🏫</div>
+                    <div class="roleplay-title">At School</div>
+                    <div class="roleplay-desc">Practice talking with classmates and teachers</div>
+                </div>
+                <div class="roleplay-card" data-roleplay="store">
+                    <div class="roleplay-icon">🛒</div>
+                    <div class="roleplay-title">At the Store</div>
+                    <div class="roleplay-desc">Learn to shop and ask for things politely</div>
+                </div>
+                <div class="roleplay-card" data-roleplay="home">
+                    <div class="roleplay-icon">🏠</div>
+                    <div class="roleplay-title">At Home</div>
+                    <div class="roleplay-desc">Talk about family and daily activities</div>
+                </div>
+                <div class="roleplay-card" data-roleplay="playground">
+                    <div class="roleplay-icon">🎮</div>
+                    <div class="roleplay-title">At Playground</div>
+                    <div class="roleplay-desc">Make friends and play together</div>
+                </div>
+            </div>
+
+            <div class="chat-container hidden" id="roleplayChat">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                <div class="chat-messages" id="roleplayMessages"></div>
+                <div class="status-indicator" id="roleplayStatus">Choose a roleplay scenario above! 🎭</div>
+                <div class="controls">
+                    <button class="control-btn record-btn" id="roleplayRecordBtn">🎤</button>
+                    <button class="control-btn" id="nextScenario">➡️ Next</button>
+                    <button class="control-btn" id="backToSelection">🔙 Back</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="feedback-area">
+            <div class="emoji-feedback" id="emojiFeedback">⭐</div>
+            <div id="feedbackText">Great job practicing English with real AI! Keep it up! 🌟</div>
+        </div>
+    </div>
+
+    <script>
+        class SpeakGenieApp {
+            constructor() {
+                this.currentMode = 'chat';
+                this.currentLanguage = 'en';
+                this.isRecording = false;
+                this.recognition = null;
+                this.currentRoleplay = null;
+                this.roleplayStep = 0;
+                this.sessionId = 'session_' + Date.now();
+                this.lastAudioUrl = null;
+                this.mediaRecorder = null;
+                this.audioChunks = [];
+                
+                this.initializeApp();
+            }
+
+            initializeApp() {
+                this.setupEventListeners();
+                this.setupSpeechRecognition();
+                this.showEncouragement();
+            }
+
+            setupEventListeners() {
+                // Mode switching
+                document.getElementById('chatMode').addEventListener('click', () => this.switchMode('chat'));
+                document.getElementById('roleplayMode').addEventListener('click', () => this.switchMode('roleplay'));
+
+                // Language switching
+                document.querySelectorAll('.lang-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.switchLanguage(e.target.dataset.lang));
+                });
+
+                // Chat controls
+                document.getElementById('recordBtn').addEventListener('click', () => this.toggleRecording());
+                document.getElementById('clearChat').addEventListener('click', () => this.clearChat());
+                document.getElementById('speakLastResponse').addEventListener('click', () => this.playLastAudio());
+
+                // Roleplay controls
+                document.querySelectorAll('.roleplay-card').forEach(card => {
+                    card.addEventListener('click', (e) => this.startRoleplay(e.currentTarget.dataset.roleplay));
+                });
+
+                document.getElementById('roleplayRecordBtn').addEventListener('click', () => this.toggleRecording());
+                document.getElementById('nextScenario').addEventListener('click', () => this.nextRoleplayStep());
+                document.getElementById('backToSelection').addEventListener('click', () => this.backToRoleplaySelection());
+            }
+
+            setupSpeechRecognition() {
+                if ('webkitSpeechRecognition' in window) {
+                    this.recognition = new webkitSpeechRecognition();
+                    this.recognition.continuous = false;
+                    this.recognition.interimResults = false;
+                    this.recognition.lang = 'en-US';
+
+                    this.recognition.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        this.handleSpeechResult(transcript);
+                    };
+
+                    this.recognition.onerror = (event) => {
+                        console.error('Speech recognition error:', event.error);
+                        this.updateStatus('Sorry, I had trouble hearing you. Please try again! 😅');
+                        this.isRecording = false;
+                        this.updateRecordButton();
+                    };
+
+                    this.recognition.onend = () => {
+                        this.isRecording = false;
+                        this.updateRecordButton();
+                    };
+                } else {
+                    this.updateStatus('Your browser doesn\\t support speech recognition. Please try Chrome! 😔');
+                }
+            }
+
+            toggleRecording() {
+                if (this.isRecording) {
+                    this.stopRecording();
+                } else {
+                    this.startRecording();
+                }
+            }
+
+            startRecording() {
+                if (!this.recognition) {
+                    this.updateStatus('Your browser doesn\\t support speech recognition. Please try Chrome! 😔');
+                    return;
+                }
+
+                this.isRecording = true;
+                this.updateRecordButton();
+                this.updateStatus('🎧 Im listening...');
+                this.recognition.start();
+            }
+
+            stopRecording() {
+                if (!this.isRecording) return;
+
+                this.isRecording = false;
+                this.updateRecordButton();
+                this.recognition.stop();
+                this.updateStatus('🤔 Processing your voice...');
+            }
+
+            updateRecordButton() {
+                const chatBtn = document.getElementById('recordBtn');
+                const roleplayBtn = document.getElementById('roleplayRecordBtn');
+                
+                [chatBtn, roleplayBtn].forEach(btn => {
+                    if (btn) {
+                        if (this.isRecording) {
+                            btn.classList.add('recording');
+                            btn.innerHTML = '⏸️';
+                        } else {
+                            btn.classList.remove('recording');
+                            btn.innerHTML = '🎤';
+                        }
+                    }
+                });
+            }
+
+            handleSpeechResult(transcript) {
+                if (this.currentMode === 'chat') {
+                    this.handleChatInput(transcript);
+                } else {
+                    this.handleRoleplayInput(transcript);
+                }
+            }
+
+            async handleChatInput(input) {
+                this.addMessage(input, 'user');
+                this.updateStatus('🤔 Let me think...');
+                
+                try {
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: input,
+                            session_id: this.sessionId,
+                            language: this.currentLanguage
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    this.addMessage(data.response, 'ai');
+                    
+                    if (data.audio_available && data.audio_url) {
+                        this.lastAudioUrl = data.audio_url;
+                        this.playAudio(data.audio_url);
+                    }
+                    
+                    this.updateStatus('Ready to chat! Click the microphone and speak 🎤');
+                    this.showEncouragement();
+
+                } catch (error) {
+                    console.error('Chat error:', error);
+                    this.addMessage('Sorry, I had trouble understanding. Please try again! 😅', 'ai');
+                    this.updateStatus('Ready to chat! Click the microphone and speak 🎤');
+                }
+            }
+
+            async handleRoleplayInput(input) {
+                if (!this.currentRoleplay) return;
+
+                this.addMessage(input, 'user', 'roleplay');
+                this.updateStatus('🤔 Let me respond...');
+
+                try {
+                    const response = await fetch('/api/roleplay', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: input,
+                            session_id: this.sessionId,
+                            roleplay_type: this.currentRoleplay,
+                            step: this.roleplayStep,
+                            language: this.currentLanguage
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    this.addMessage(data.response, 'ai', 'roleplay');
+                    this.roleplayStep = data.next_step;
+                    
+                    if (data.audio_available && data.audio_url) {
+                        this.lastAudioUrl = data.audio_url;
+                        this.playAudio(data.audio_url);
+                    }
+                    
+                    this.updateRoleplayProgress();
+                    this.updateStatus(`Step ${this.roleplayStep} - Keep going! 🎭`);
+
+                } catch (error) {
+                    console.error('Roleplay error:', error);
+                    this.addMessage('Great job! Let\\s continue our roleplay! 😊', 'ai', 'roleplay');
+                    this.updateStatus('Ready for roleplay! 🎭');
+                }
+            }
+
+            addMessage(text, sender, context = 'chat') {
+                const messagesContainer = context === 'roleplay' ? 
+                    document.getElementById('roleplayMessages') : 
+                    document.getElementById('chatMessages');
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}-message`;
+                
+                const span = document.createElement('span');
+                span.textContent = text;
+                messageDiv.appendChild(span);
+                
+                messagesContainer.appendChild(messageDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+
+            switchMode(mode) {
+                this.currentMode = mode;
+                
+                // Update mode buttons
+                document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+                document.getElementById(mode + 'Mode').classList.add('active');
+
+                // Show/hide sections
+                if (mode === 'chat') {
+                    document.getElementById('chatSection').classList.remove('hidden');
+                    document.getElementById('roleplaySection').classList.add('hidden');
+                } else {
+                    document.getElementById('chatSection').classList.add('hidden');
+                    document.getElementById('roleplaySection').classList.remove('hidden');
+                }
+            }
+
+            switchLanguage(lang) {
+                this.currentLanguage = lang;
+                
+                // Update language buttons
+                document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`[data-lang="${lang}"]`).classList.add('active');
+
+                // Update speech recognition language
+                if (this.recognition) {
+                    const langMap = {
+                        'en': 'en-US',
+                        'hi': 'hi-IN',
+                        'mr': 'mr-IN',
+                        'gu': 'gu-IN',
+                        'ta': 'ta-IN'
+                    };
+                    this.recognition.lang = langMap[lang] || 'en-US';
+                }
+            }
+
+            async clearChat() {
+                try {
+                    await fetch('/api/clear_history', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            session_id: this.sessionId
+                        })
+                    });
+
+                    const messagesContainer = document.getElementById('chatMessages');
+                    messagesContainer.innerHTML = `
+                        <div class="message ai-message">
+                            <span>🧞‍♂️ Hi there! I'm Genie, your AI English tutor powered by real artificial intelligence! Ask me anything about English - grammar, vocabulary, or just have a chat! I can understand your voice and speak back to you! 😊</span>
+                        </div>
+                    `;
+
+                } catch (error) {
+                    console.error('Clear chat error:', error);
+                }
+            }
+
+            playAudio(audioUrl) {
+                this.updateStatus('🗣️ Speaking...');
+                const audio = new Audio(audioUrl);
+                
+                audio.onended = () => {
+                    this.updateStatus('Ready! Click the microphone to speak 🎤');
+                };
+                
+                audio.onerror = () => {
+                    console.error('Audio playback error');
+                    this.updateStatus('Ready! Click the microphone to speak 🎤');
+                };
+                
+                audio.play().catch(error => {
+                    console.error('Audio play error:', error);
+                    this.updateStatus('Ready! Click the microphone to speak 🎤');
+                });
+            }
+
+            playLastAudio() {
+                if (this.lastAudioUrl) {
+                    this.playAudio(this.lastAudioUrl);
+                }
+            }
+
+            startRoleplay(roleplayType) {
+                this.currentRoleplay = roleplayType;
+                this.roleplayStep = 0;
+
+                // Update UI
+                document.querySelectorAll('.roleplay-card').forEach(card => card.classList.remove('active'));
+                document.querySelector(`[data-roleplay="${roleplayType}"]`).classList.add('active');
+                document.getElementById('roleplayChat').classList.remove('hidden');
+
+                // Clear previous messages
+                document.getElementById('roleplayMessages').innerHTML = '';
+
+                // Start first step
+                this.nextRoleplayStep();
+            }
+
+            async nextRoleplayStep() {
+                if (!this.currentRoleplay) return;
+
+                try {
+                    const response = await fetch('/api/roleplay', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: '',
+                            session_id: this.sessionId,
+                            roleplay_type: this.currentRoleplay,
+                            step: this.roleplayStep,
+                            language: this.currentLanguage
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    this.addMessage(data.response, 'ai', 'roleplay');
+                    this.roleplayStep = data.next_step;
+                    
+                    if (data.audio_available && data.audio_url) {
+                        this.lastAudioUrl = data.audio_url;
+                        this.playAudio(data.audio_url);
+                    }
+                    
+                    this.updateRoleplayProgress();
+
+                } catch (error) {
+                    console.error('Next scenario error:', error);
+                }
+            }
+
+            updateRoleplayProgress() {
+                const maxSteps = 5; // Approximate max steps per roleplay
+                const progress = Math.min((this.roleplayStep / maxSteps) * 100, 100);
+                document.getElementById('progressFill').style.width = progress + '%';
+                
+                document.getElementById('roleplayStatus').textContent = 
+                    `Step ${this.roleplayStep} - ${this.currentRoleplay.charAt(0).toUpperCase() + this.currentRoleplay.slice(1)} roleplay 🎭`;
+            }
+
+            backToRoleplaySelection() {
+                document.getElementById('roleplayChat').classList.add('hidden');
+                document.querySelectorAll('.roleplay-card').forEach(card => card.classList.remove('active'));
+                this.currentRoleplay = null;
+                this.roleplayStep = 0;
+                document.getElementById('progressFill').style.width = '0%';
+                document.getElementById('roleplayStatus').textContent = 'Choose a roleplay scenario above! 🎭';
+            }
+
+            updateStatus(message) {
+                const statusElement = document.getElementById('statusIndicator');
+                const roleplayStatusElement = document.getElementById('roleplayStatus');
+                
+                if (this.currentMode === 'chat') {
+                    statusElement.textContent = message;
+                    statusElement.className = 'status-indicator';
+                    
+                    if (message.includes('listening')) {
+                        statusElement.classList.add('listening');
+                    } else if (message.includes('think') || message.includes('Processing')) {
+                        statusElement.classList.add('processing');
+                    } else if (message.includes('Speaking')) {
+                        statusElement.classList.add('speaking');
+                    }
+                } else if (this.currentRoleplay) {
+                    if (message.includes('listening') || message.includes('Processing') || message.includes('Speaking')) {
+                        roleplayStatusElement.textContent = message;
+                    }
+                }
+            }
+
+            showEncouragement() {
+                const encouragements = [
+                    { emoji: '🌟', text: 'Amazing! You\\re getting better at English!' },
+                    { emoji: '🎉', text: 'Fantastic job practicing with AI!' },
+                    { emoji: '💪', text: 'Keep up the great work!' },
+                    { emoji: '✨', text: 'You\\re doing wonderfully!' },
+                    { emoji: '🚀', text: 'Your English is improving every day!' }
+                ];
+                
+                const randomEncouragement = encouragements[Math.floor(Math.random() * encouragements.length)];
+                
+                setTimeout(() => {
+                    document.getElementById('emojiFeedback').textContent = randomEncouragement.emoji;
+                    document.getElementById('feedbackText').textContent = randomEncouragement.text;
+                }, 2000);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new SpeakGenieApp();
+        });
+    </script>
+</body>
+</html>
