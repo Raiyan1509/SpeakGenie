@@ -28,7 +28,7 @@ if not GEMINI_API_KEY:
 else:
     # ✅ ADD THIS LINE TO FIX THE ISSUE
     genai.configure(api_key=GEMINI_API_KEY) 
-GEMINI_MODEL_NAME = "gemini-1.5-pro"
+GEMINI_MODEL_NAME = "gemini-1.5-flash"
 
 class SpeakGenieAI:
     def __init__(self):
